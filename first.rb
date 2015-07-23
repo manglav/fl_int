@@ -9,7 +9,7 @@ DB = Sequel.connect(db_path)
 
 class HourlyDatum < Sequel::Model
   hourly_data_tables = DB.tables.select{|table| table.to_s.start_with?("rtma_data")}
-  set_dataset hourly_data_tables.first
+  set_dataset hourly_data_tables.last
 end
 
 class App < Sinatra::Base
@@ -25,6 +25,26 @@ class App < Sinatra::Base
     # validate dates later
   end
 
+  def calc_GDD(temps)
+    temps = temps.map {|x| x.to_f/100 }
+    tbase = 30
+    tmin = temps.min
+    tmax = temps.max
+    val = 0.5 * (bound(10, 30, tmin) + bound(10, 30, tmax)) - 30
+  end
+
+  def bound(lower, upper, val)
+    case
+    when val < lower
+      lower
+    when (lower..upper)
+      val
+    when val > upper
+      upper
+    end
+  end
+
+
   get '/data' do
     param :grid_id, Integer, required: true
     param :'start-date', String, required: true, format: /\d\d\d\d-\d\d-\d\d/
@@ -36,12 +56,22 @@ class App < Sinatra::Base
       select(:temp, :timestamp).
       where(grid_id: params["grid_id"]).
       where(timestamp: params["start-date"]...params["end-date"]).
-      order(:timestamp)
+      order(:timestamp).
+      all
+
+    final = {}
 
     data.each do |datum|
-      date =
+      date = datum.timestamp.strftime('%F')
+      arr = final[date] || []
+      final[date] = arr.concat([datum.temp])
+    end
 
-    data.map(&:to_hash).to_json
+    final.each do |k,v|
+      final[k] = {gdd: calc_GDD(v)}
+    end
+
+    final.to_json
   end
 
   run! if app_file == $0
