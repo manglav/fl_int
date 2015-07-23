@@ -32,7 +32,7 @@ class App < Sinatra::Base
     end
   end
 
-  def sharded_table_names_for_query(start_date, end_date, )
+  def sharded_table_names_for_query(start_date, end_date)
     start_table = start_date.strftime("rtma_data_2_5k_hourly_y%Y_m%m")
     end_table = end_date.strftime("rtma_data_2_5k_hourly_y%Y_m%m")
     start_index = SHARDED_TABLES_STR.index(start_table)
@@ -69,7 +69,7 @@ class App < Sinatra::Base
       all
   end
 
-  def format_data(rows)
+  def group_by_date(rows)
     dates_with_temps = {}
 
     rows.each do |row|
@@ -77,12 +77,15 @@ class App < Sinatra::Base
       temps = dates_with_temps[date] || []
       dates_with_temps[date] = temps.concat([row[:temp]])
     end
+  end
 
-    dates_with_temps.each do |date,temps|
+  def format_data(rows)
+    dates_with_grouped_temps = group_by_date(rows)
+    dates_with_grouped_temps.each do |date,temps|
       dates_with_temps[date] = {gdd: calc_GDD(temps)}
     end
 
-    dates_with_temps.to_json
+    dates_with_grouped_temps.to_json
   end
 
   get '/data' do
