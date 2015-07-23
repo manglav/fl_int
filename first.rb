@@ -6,10 +6,10 @@ require 'multi_json'
 db_path = 'postgres://gf8gtyxqredf9q6:zd6vgwc3i2zkpgs@hackday.czas5cnicq66.us-east-1.rds.amazonaws.com:5432/farmlogs_rtma_data'
 DB = Sequel.connect(db_path)
 hourly_data_tables = DB.tables.select{|table| table.to_s.start_with?("rtma_data")}
-hourly_data = DB[hourly_data_tables.first]
+
 
 class HourlyDatum < Sequel::Model
-
+  set_dataset hourly_data_tables.first
 end
 
 get '/data' do
