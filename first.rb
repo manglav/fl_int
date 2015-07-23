@@ -19,10 +19,18 @@ class App < Sinatra::Base
     content_type :json
   end
 
+  def validate_and_parse_dates
+    params["start-date"] = Date.parse(params["start-date"])
+    params["end-date"] = Date.parse(params["end-date"])
+    # validate dates later
+  end
+
   get '/data' do
     param :grid_id, Integer, required: true
-    param :'start-date', Date, required: true
-    param :'end-date', Date, default: lambda { Date.today }
+    param :'start-date', String, required: true, format: /\d\d\d\d-\d\d-\d\d/
+    param :'end-date', String, required: true, format: /\d\d\d\d-\d\d-\d\d/
+
+    validate_and_parse_dates
     params.to_json
   end
 
