@@ -32,12 +32,12 @@ class App < Sinatra::Base
     end
   end
 
-  def get_indexes(start_date, end_date, tables)
+  def sharded_table_names_for_query(start_date, end_date, )
     start_table = start_date.strftime("rtma_data_2_5k_hourly_y%Y_m%m")
     end_table = end_date.strftime("rtma_data_2_5k_hourly_y%Y_m%m")
-    start_index = tables.index(start_table)
-    end_index = tables.index(end_table)
-    [start_index, end_index]
+    start_index = SHARDED_TABLES_STR.index(start_table)
+    end_index = SHARDED_TABLES_STR.index(end_table)
+    SHARDED_TABLES[start_index..end_index]
   end
 
   def calc_GDD(temps)
@@ -58,11 +58,6 @@ class App < Sinatra::Base
     when val > upper
       upper
     end
-  end
-
-  def target_tables
-    start_table_index, end_table_index = get_indexes(params["start-date"], params["end-date"], SHARDED_TABLES_STR)
-    SHARDED_TABLES[start_table_index..end_table_index]
   end
 
   def single_table_query(table, grid_id, start_date, end_date)
@@ -99,7 +94,7 @@ class App < Sinatra::Base
     parse_and_validate_dates
 
     # fetch data from tables, sharded
-    rows = target_tables.inject([]) do |sum, table|
+    rows = sharded_table_names_for_query.inject([]) do |sum, table|
       sum + single_table_query(
           table,
           params["grid_id"],
