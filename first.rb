@@ -31,7 +31,17 @@ class App < Sinatra::Base
     param :'end-date', String, required: true, format: /\d\d\d\d-\d\d-\d\d/
 
     validate_and_parse_dates
-    params.to_json
+
+    data = HourlyDatum.
+      select(:temp, :timestamp).
+      where(grid_id: params["grid_id"]).
+      where(timestamp: params["start-date"]...params["end-date"]).
+      order(:timestamp)
+
+    data.each do |datum|
+      date =
+
+    data.map(&:to_hash).to_json
   end
 
   run! if app_file == $0
